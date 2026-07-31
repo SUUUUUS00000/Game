@@ -8,6 +8,22 @@ const state = {
     kills: 0
 };
 
+function verifySISConnection() {
+    if (!window.SIS || typeof window.SIS.receiveHeartbeat !== 'function' || !window.SIS.verifyIntegrity()) {
+        document.body.innerHTML = '<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#FF3B30;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999999;font-family:-apple-system,sans-serif;text-align:center;padding:20px;"><h1 style="font-size:30px;margin-bottom:12px;">SECURITY ALERT</h1><p style="font-size:18px;color:#FFF;">The site has been damaged!</p></div>';
+        setTimeout(function () { window.location.href = 'about:blank'; }, 1500);
+    }
+}
+
+function sendSISHeartbeat() {
+    verifySISConnection();
+    var codeSignature = document.documentElement.outerHTML.substring(0, 500) + HEROES.length + MAPS.length;
+    window.SIS.receiveHeartbeat(codeSignature);
+}
+
+setInterval(sendSISHeartbeat, 10000);
+setInterval(verifySISConnection, 3000);
+
 function saveState() {
     localStorage.setItem('apex_m_coins', state.coins);
     localStorage.setItem('apex_m_upgrades', JSON.stringify(state.upgrades));
@@ -42,6 +58,7 @@ let coins = [];
 let floatingTexts = [];
 
 function initMenu() {
+    verifySISConnection();
     saveState();
     renderHeroPreview();
     renderMapGrid();
@@ -330,7 +347,7 @@ class Entity {
         let mx = 0, my = 0;
 
         if (this.isBot) {
-            this.updateSmartAI(mx, my, moving);
+            this.updateSmartAI();
         } else {
             if (joystickInput.active) {
                 mx = joystickInput.x;
@@ -524,6 +541,7 @@ function checkObstacleCollision(x, y, r) {
 }
 
 function startGame() {
+    verifySISConnection();
     document.getElementById('menu-screen').classList.add('hidden');
     document.getElementById('hud-layer').classList.remove('hidden');
 
