@@ -5,6 +5,7 @@
     --apple-glass-card: rgba(25, 25, 30, 0.75);
     --apple-accent: #007AFF;
     --apple-gold: #FFD60A;
+    --apple-red: #FF3B30;
     --apple-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Roboto, sans-serif;
 }
 
@@ -136,6 +137,7 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .arrow-btn {
@@ -163,6 +165,16 @@ body, html {
 .hero-info p {
     font-size: 13px;
     color: #8E8E93;
+}
+
+.lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--apple-gold);
+    font-weight: 700;
+    margin-top: 4px;
 }
 
 .section-subtitle {
@@ -227,6 +239,11 @@ body, html {
     background: rgba(255, 255, 255, 0.12);
     padding: 8px 16px;
     font-size: 13px;
+}
+
+.apple-btn.buy-btn {
+    background: var(--apple-gold);
+    color: #000;
 }
 
 .start-btn {
