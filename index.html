@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Apex Vector Mobile</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <div class="top-bar">
+        <div class="brand-title">APEX <span>VECTOR</span></div>
+        <div class="currency-badge">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+            <span id="global-coins-display">0</span>
+        </div>
+    </div>
+
+    <div id="menu-screen" class="screen">
+        <div class="menu-card glass-panel">
+            <div class="menu-header">
+                <div class="menu-title">Персонаж</div>
+                <button class="apple-btn secondary" onclick="toggleShop(true)">Магазин</button>
+            </div>
+
+            <div class="hero-selector-wrapper">
+                <button class="arrow-btn" onclick="prevHero()">&#10094;</button>
+                <div class="hero-preview-box" id="hero-preview"></div>
+                <button class="arrow-btn" onclick="nextHero()">&#10095;</button>
+            </div>
+
+            <div class="hero-info">
+                <h3 id="hero-name">Имя</h3>
+                <p id="hero-role">Роль</p>
+            </div>
+
+            <div class="section-subtitle">Выберите Карту</div>
+            <div class="map-grid" id="map-grid-container"></div>
+
+            <div class="abilities-row" id="hero-abilities"></div>
+
+            <button class="apple-btn start-btn" onclick="startGame()">В БОЙ</button>
+        </div>
+    </div>
+
+    <div id="shop-screen" class="screen hidden">
+        <div class="menu-card glass-panel shop-box">
+            <div class="menu-header">
+                <div class="menu-title">Магазин</div>
+                <button class="apple-btn secondary" onclick="toggleShop(false)">Назад</button>
+            </div>
+            <div class="shop-grid">
+                <div class="shop-item">
+                    <div>
+                        <div class="item-title">Урон +10%</div>
+                        <div class="item-lvl" id="shop-dmg-lvl">Ур. 0</div>
+                    </div>
+                    <button class="apple-btn small-btn" onclick="buyUpgrade('dmg')"><span id="cost-dmg">100</span> Монет</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <div class="item-title">Здоровье +15%</div>
+                        <div class="item-lvl" id="shop-hp-lvl">Ур. 0</div>
+                    </div>
+                    <button class="apple-btn small-btn" onclick="buyUpgrade('hp')"><span id="cost-hp">100</span> Монет</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <div class="item-title">Скорость +5%</div>
+                        <div class="item-lvl" id="shop-spd-lvl">Ур. 0</div>
+                    </div>
+                    <button class="apple-btn small-btn" onclick="buyUpgrade('spd')"><span id="cost-spd">150</span> Монет</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <div class="item-title">КД Навыков -5%</div>
+                        <div class="item-lvl" id="shop-cdr-lvl">Ур. 0</div>
+                    </div>
+                    <button class="apple-btn small-btn" onclick="buyUpgrade('cdr')"><span id="cost-cdr">200</span> Монет</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="hud-layer" class="hidden">
+        <div class="hud-top-status glass-panel">
+            <div class="hud-row">
+                <span id="hud-hero-name">Игрок</span>
+                <span id="hud-hp-text">100/100</span>
+            </div>
+            <div class="hp-bar-outer">
+                <div id="hud-hp-fill" class="hp-bar-inner"></div>
+            </div>
+        </div>
+
+        <div class="score-pill glass-panel">
+            Убито: <span id="hud-kills">0</span> | Осталось: <span id="hud-alive">0</span>
+        </div>
+
+        <div id="touch-controls">
+            <div id="joystick-zone">
+                <div id="joystick-base">
+                    <div id="joystick-knob"></div>
+                </div>
+            </div>
+            <div id="action-buttons">
+                <button class="action-btn ab-btn" id="btn-ab-1">Q
+                    <div class="cd-overlay" id="cd-overlay-0"></div>
+                </button>
+                <button class="action-btn ab-btn" id="btn-ab-2">E
+                    <div class="cd-overlay" id="cd-overlay-1"></div>
+                </button>
+                <button class="action-btn attack-btn" id="btn-attack">
+                    <svg viewBox="0 0 24 24" fill="#FFF" width="28" height="28"><path d="M12 2L2 22l10-4 10 4L12 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="maps.js"></script>
+    <script src="heroes.js"></script>
+    <script src="game.js"></script>
+</body>
+                                  </html>
