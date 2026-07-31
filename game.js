@@ -1,6 +1,7 @@
 const state = {
-    coins: parseInt(localStorage.getItem('apex_m_coins') || '300'),
+    coins: parseInt(localStorage.getItem('apex_m_coins') || '400'),
     upgrades: JSON.parse(localStorage.getItem('apex_m_upgrades') || '{"dmg":0,"hp":0,"spd":0,"cdr":0}'),
+    unlockedHeroes: JSON.parse(localStorage.getItem('apex_m_unlocked') || '["guardian","sprinter","pyro","engineer","vampire"]'),
     selectedHeroIndex: 0,
     selectedMapIndex: 0,
     inGame: false,
@@ -10,6 +11,7 @@ const state = {
 function saveState() {
     localStorage.setItem('apex_m_coins', state.coins);
     localStorage.setItem('apex_m_upgrades', JSON.stringify(state.upgrades));
+    localStorage.setItem('apex_m_unlocked', JSON.stringify(state.unlockedHeroes));
     document.getElementById('global-coins-display').innerText = state.coins;
 }
 
@@ -27,6 +29,7 @@ const WORLD_SIZE = 2000;
 let camera = { x: 0, y: 0 };
 let currentMap = MAPS[0];
 let mapObstacles = { trees: [], rocks: [] };
+let ambientParticles = [];
 
 let joystickInput = { x: 0, y: 0, active: false };
 let isAttacking = false;
@@ -51,6 +54,20 @@ function renderHeroPreview() {
     document.getElementById('hero-name').innerText = hero.name;
     document.getElementById('hero-role').innerText = hero.role;
 
+    const isUnlocked = state.unlockedHeroes.includes(hero.id);
+    const lockBox = document.getElementById('hero-lock-status');
+    const mainBtn = document.getElementById('main-action-btn');
+
+    if (isUnlocked) {
+        lockBox.innerHTML = '';
+        mainBtn.innerText = 'В БОЙ';
+        mainBtn.className = 'apple-btn start-btn';
+    } else {
+        lockBox.innerHTML = `<div class="lock-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> Заблокировано</div>`;
+        mainBtn.innerText = `Купить за ${hero.price} Монет`;
+        mainBtn.className = 'apple-btn start-btn buy-btn';
+    }
+
     const box = document.getElementById('hero-preview');
     box.innerHTML = `
         <svg viewBox="0 0 100 100" width="90" height="90">
@@ -68,6 +85,24 @@ function renderHeroPreview() {
         item.innerHTML = `<span><b>${a.name}</b></span> <span>КД: ${a.cd}с</span>`;
         abContainer.appendChild(item);
     });
+}
+
+function handleMainAction() {
+    const hero = HEROES[state.selectedHeroIndex];
+    const isUnlocked = state.unlockedHeroes.includes(hero.id);
+
+    if (isUnlocked) {
+        startGame();
+    } else {
+        if (state.coins >= hero.price) {
+            state.coins -= hero.price;
+            state.unlockedHeroes.push(hero.id);
+            saveState();
+            renderHeroPreview();
+        } else {
+            alert('Недостаточно монет!');
+        }
+    }
 }
 
 function renderMapGrid() {
@@ -253,6 +288,8 @@ class Entity {
         this.angle = 0;
         this.walkTimer = 0;
         this.recoil = 0;
+        this.vx = 0;
+        this.vy = 0;
     }
 
     useAbility(idx) {
@@ -267,8 +304,8 @@ class Entity {
         }
 
         let target = getClosestEnemy(this);
-        if (target && dist(this, target) < 300) {
-            target.takeDamage(this.damage * 1.5, this);
+        if (target && dist(this, target) < 320) {
+            target.takeDamage(this.damage * 1.6, this);
         }
     }
 
@@ -277,7 +314,7 @@ class Entity {
         floatingTexts.push(new FloatingText(this.x, this.y, `-${Math.round(amount)}`, '#FF3B30'));
         if (this.hp <= 0 && attacker === player) {
             state.kills++;
-            state.coins += 20;
+            state.coins += 25;
             saveState();
             coins.push({ x: this.x, y: this.y, val: 10 });
         }
@@ -293,15 +330,7 @@ class Entity {
         let mx = 0, my = 0;
 
         if (this.isBot) {
-            let enemy = getClosestEnemy(this);
-            if (enemy && dist(this, enemy) < 450) {
-                this.angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-                if (dist(this, enemy) > 120) {
-                    mx = Math.cos(this.angle); my = Math.sin(this.angle);
-                    moving = true;
-                }
-                if (this.shootTimer <= 0) this.shoot();
-            }
+            this.updateSmartAI(mx, my, moving);
         } else {
             if (joystickInput.active) {
                 mx = joystickInput.x;
@@ -318,19 +347,91 @@ class Entity {
             if (isAttacking && this.shootTimer <= 0) {
                 this.shoot();
             }
-        }
 
-        if (moving) {
-            this.walkTimer += 0.2;
-            let nextX = this.x + mx * this.speed;
-            let nextY = this.y + my * this.speed;
+            if (moving) {
+                this.walkTimer += 0.2;
+                this.vx = mx * this.speed;
+                this.vy = my * this.speed;
+                let nextX = this.x + this.vx;
+                let nextY = this.y + this.vy;
 
-            if (!checkObstacleCollision(nextX, this.y, this.radius)) this.x = nextX;
-            if (!checkObstacleCollision(this.x, nextY, this.radius)) this.y = nextY;
+                if (!checkObstacleCollision(nextX, this.y, this.radius)) this.x = nextX;
+                if (!checkObstacleCollision(this.x, nextY, this.radius)) this.y = nextY;
+            } else {
+                this.vx = 0; this.vy = 0;
+            }
         }
 
         this.x = Math.max(this.radius, Math.min(WORLD_SIZE - this.radius, this.x));
         this.y = Math.max(this.radius, Math.min(WORLD_SIZE - this.radius, this.y));
+    }
+
+    updateSmartAI() {
+        let enemy = getClosestEnemy(this);
+        let mx = 0, my = 0;
+
+        let dangerBullet = null;
+        let minBulletDist = 120;
+        bullets.forEach(b => {
+            if (b.owner !== this && dist(this, b) < minBulletDist) {
+                dangerBullet = b;
+            }
+        });
+
+        if (dangerBullet) {
+            let perpAngle = Math.atan2(dangerBullet.vy, dangerBullet.vx) + Math.PI / 2;
+            mx = Math.cos(perpAngle);
+            my = Math.sin(perpAngle);
+        } else if (enemy && dist(this, enemy) < 550) {
+            let bSpeed = 11;
+            let timeToHit = dist(this, enemy) / bSpeed;
+            let predX = enemy.x + enemy.vx * timeToHit;
+            let predY = enemy.y + enemy.vy * timeToHit;
+
+            this.angle = Math.atan2(predY - this.y, predX - this.x);
+
+            let d = dist(this, enemy);
+            if (this.hp < this.maxHp * 0.35) {
+                mx = -Math.cos(this.angle);
+                my = -Math.sin(this.angle);
+                if (this.cooldowns[1] === 0) this.useAbility(1);
+            } else if (d > 180) {
+                mx = Math.cos(this.angle);
+                my = Math.sin(this.angle);
+            } else {
+                let strafe = Math.atan2(enemy.y - this.y, enemy.x - this.x) + Math.PI / 2;
+                mx = Math.cos(strafe);
+                my = Math.sin(strafe);
+                if (this.cooldowns[0] === 0 && d < 160) this.useAbility(0);
+            }
+
+            if (this.shootTimer <= 0) this.shoot();
+        } else {
+            let closestCoin = null;
+            let minCDist = 400;
+            coins.forEach(c => {
+                let cd = dist(this, c);
+                if (cd < minCDist) { minCDist = cd; closestCoin = c; }
+            });
+
+            if (closestCoin) {
+                let ca = Math.atan2(closestCoin.y - this.y, closestCoin.x - this.x);
+                mx = Math.cos(ca); my = Math.sin(ca);
+            } else {
+                if (Math.random() < 0.03) this.angle = Math.random() * Math.PI * 2;
+                mx = Math.cos(this.angle) * 0.5;
+                my = Math.sin(this.angle) * 0.5;
+            }
+        }
+
+        this.walkTimer += 0.2;
+        this.vx = mx * this.speed;
+        this.vy = my * this.speed;
+
+        let nextX = this.x + this.vx;
+        let nextY = this.y + this.vy;
+        if (!checkObstacleCollision(nextX, this.y, this.radius)) this.x = nextX;
+        if (!checkObstacleCollision(this.x, nextY, this.radius)) this.y = nextY;
     }
 
     shoot() {
@@ -429,6 +530,17 @@ function startGame() {
     currentMap = MAPS[state.selectedMapIndex];
     mapObstacles = generateMapObstacles(WORLD_SIZE, currentMap);
 
+    ambientParticles = [];
+    for (let i = 0; i < 40; i++) {
+        ambientParticles.push({
+            x: Math.random() * WORLD_SIZE,
+            y: Math.random() * WORLD_SIZE,
+            r: Math.random() * 2.5 + 1,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5
+        });
+    }
+
     const hData = HEROES[state.selectedHeroIndex];
     player = new Entity(WORLD_SIZE / 2, WORLD_SIZE / 2, hData, false);
 
@@ -450,32 +562,48 @@ function startGame() {
 }
 
 function drawEnvironment() {
+    ambientParticles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = WORLD_SIZE; if (p.x > WORLD_SIZE) p.x = 0;
+        if (p.y < 0) p.y = WORLD_SIZE; if (p.y > WORLD_SIZE) p.y = 0;
+
+        ctx.save();
+        ctx.fillStyle = currentMap.particleColor;
+        ctx.beginPath();
+        ctx.arc(p.x - camera.x, p.y - camera.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+
     mapObstacles.rocks.forEach(rk => {
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
         ctx.beginPath();
-        ctx.arc(rk.x - camera.x + 4, rk.y - camera.y + 4, rk.r, 0, Math.PI*2);
+        ctx.arc(rk.x - camera.x + 5, rk.y - camera.y + 5, rk.r, 0, Math.PI*2);
         ctx.fill();
 
         ctx.fillStyle = currentMap.rockColor;
         ctx.beginPath();
         ctx.arc(rk.x - camera.x, rk.y - camera.y, rk.r, 0, Math.PI*2);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.beginPath();
+        ctx.arc(rk.x - camera.x - rk.r*0.3, rk.y - camera.y - rk.r*0.3, rk.r*0.4, 0, Math.PI*2);
+        ctx.fill();
         ctx.restore();
     });
 
     mapObstacles.trees.forEach(t => {
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.beginPath();
-        ctx.ellipse(t.x - camera.x + 8, t.y - camera.y + 8, t.r, t.r * 0.6, 0, 0, Math.PI*2);
+        ctx.ellipse(t.x - camera.x + 10, t.y - camera.y + 10, t.r, t.r * 0.6, 0, 0, Math.PI*2);
         ctx.fill();
 
         ctx.fillStyle = currentMap.treeColor;
         ctx.beginPath();
-        ctx.arc(t.x - camera.x, t.y - camera.y, t.r * 0.4, 0, Math.PI*2);
+        ctx.arc(t.x - camera.x, t.y - camera.y, t.r * 0.35, 0, Math.PI*2);
         ctx.fill();
 
         ctx.fillStyle = currentMap.treeFoliage;
@@ -483,9 +611,10 @@ function drawEnvironment() {
         ctx.arc(t.x - camera.x, t.y - camera.y, t.r, 0, Math.PI*2);
         ctx.fill();
 
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillStyle = currentMap.foliageHighlight;
+        ctx.globalAlpha = 0.4;
         ctx.beginPath();
-        ctx.arc(t.x - camera.x - t.r*0.2, t.y - camera.y - t.r*0.2, t.r * 0.5, 0, Math.PI*2);
+        ctx.arc(t.x - camera.x - t.r*0.25, t.y - camera.y - t.r*0.25, t.r * 0.55, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
     });
@@ -520,6 +649,7 @@ function gameLoop() {
         alert('Поражение! Убито ботов: ' + state.kills);
         document.getElementById('hud-layer').classList.add('hidden');
         document.getElementById('menu-screen').classList.remove('hidden');
+        renderHeroPreview();
         return;
     }
 
@@ -543,10 +673,15 @@ function gameLoop() {
     });
 
     coins.forEach((c, i) => {
+        ctx.save();
         ctx.fillStyle = '#FFD60A';
+        ctx.shadowColor = '#FFD60A';
+        ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(c.x - camera.x, c.y - camera.y, 6, 0, Math.PI*2);
         ctx.fill();
+        ctx.restore();
+
         if (dist(player, c) < player.radius + 10) {
             state.coins += c.val;
             saveState();
