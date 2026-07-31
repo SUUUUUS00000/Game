@@ -33,6 +33,7 @@
             <div class="hero-info">
                 <h3 id="hero-name">Имя</h3>
                 <p id="hero-role">Роль</p>
+                <div id="hero-lock-status"></div>
             </div>
 
             <div class="section-subtitle">Выберите Карту</div>
@@ -40,14 +41,14 @@
 
             <div class="abilities-row" id="hero-abilities"></div>
 
-            <button class="apple-btn start-btn" onclick="startGame()">В БОЙ</button>
+            <button id="main-action-btn" class="apple-btn start-btn" onclick="handleMainAction()">В БОЙ</button>
         </div>
     </div>
 
     <div id="shop-screen" class="screen hidden">
         <div class="menu-card glass-panel shop-box">
             <div class="menu-header">
-                <div class="menu-title">Магазин</div>
+                <div class="menu-title">Улучшения</div>
                 <button class="apple-btn secondary" onclick="toggleShop(false)">Назад</button>
             </div>
             <div class="shop-grid">
@@ -122,4 +123,4 @@
     <script src="heroes.js"></script>
     <script src="game.js"></script>
 </body>
-                                  </html>
+</html>
