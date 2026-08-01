@@ -1,0 +1,357 @@
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --bg: #0b0d10;
+  --panel: rgba(13, 16, 21, 0.88);
+  --panel-solid: #10141a;
+  --line: #262c36;
+  --accent: #ff8a1e;
+  --accent-2: #ffb35c;
+  --sand: #e8c992;
+  --text: #f2ecdf;
+  --dim: #9aa3b2;
+  --good: #7ddb8a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Rajdhani", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game-root {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+  outline: none;
+}
+
+.font-display {
+  font-family: "Chakra Petch", "Rajdhani", sans-serif;
+}
+
+/* ---------- panels & buttons ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.btn {
+  font-family: "Chakra Petch", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease,
+    filter 0.15s ease;
+  touch-action: manipulation;
+}
+.btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+.btn-primary {
+  background: linear-gradient(180deg, #ffa63e, #f0700c);
+  color: #1a0f02;
+  border-color: #ffc27a;
+  box-shadow: 0 6px 26px rgba(255, 122, 10, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  padding: 14px 34px;
+  font-size: 18px;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 8px 34px rgba(255, 140, 20, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-color: var(--line);
+  padding: 10px 18px;
+  font-size: 14px;
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3a4250;
+}
+.btn-square {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  padding: 0;
+}
+
+.title-glow {
+  background: linear-gradient(180deg, #fff3dd 0%, #ffc877 45%, #ff7a1a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 24px rgba(255, 122, 10, 0.45));
+}
+
+/* ---------- crosshair & hitmarker ---------- */
+#crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+.ch-line {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  transition: left 0.1s ease-out, top 0.1s ease-out, opacity 0.2s;
+}
+.ch-l { width: 12px; height: 2px; left: calc(-14px - var(--g, 0px)); top: -1px; }
+.ch-r { width: 12px; height: 2px; left: calc(2px + var(--g, 0px)); top: -1px; }
+.ch-t { width: 2px; height: 12px; left: -1px; top: calc(-14px - var(--g, 0px)); }
+.ch-b { width: 2px; height: 12px; left: -1px; top: calc(2px + var(--g, 0px)); }
+.ch-dot { width: 3px; height: 3px; left: -1.5px; top: -1.5px; border-radius: 50%; }
+
+.hitmarker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.hm-arm {
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+.hm-arm.head { background: #ffb35c; }
+.hm-tl { width: 3px; height: 11px; transform: rotate(45deg); left: -3px; top: -15px; }
+.hm-tr { width: 3px; height: 11px; transform: rotate(-45deg); left: 0px; top: -15px; }
+.hm-bl { width: 3px; height: 11px; transform: rotate(-45deg); left: -3px; top: 4px; }
+.hm-br { width: 3px; height: 11px; transform: rotate(45deg); left: 0px; top: 4px; }
+@keyframes hm-pop {
+  0% { transform: scale(1.8); opacity: 0; }
+  25% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(0.55); opacity: 0; }
+}
+.hitmarker.anim .hm-arm { animation: hm-pop 0.28s ease-out forwards; }
+
+/* ---------- banners ---------- */
+@keyframes banner-pop {
+  0% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  75% { transform: translate(-50%, -50%) scale(1.02); opacity: 1; }
+  100% { transform: translate(-50%, -58%) scale(0.96); opacity: 0; }
+}
+.banner-anim {
+  animation: banner-pop 1.1s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
+}
+
+@keyframes hint-fade {
+  0% { opacity: 0; transform: translateY(10px); }
+  10%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+.hint-anim { animation: hint-fade 5.5s ease forwards; }
+
+@keyframes combo-pop {
+  0% { transform: scale(1.9); }
+  100% { transform: scale(1); }
+}
+.combo-anim { animation: combo-pop 0.18s ease-out; }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.pulse-glow { animation: pulse-glow 1.4s ease-in-out infinite; }
+
+/* ---------- joystick ---------- */
+.joy-base {
+  position: absolute;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 70%);
+  pointer-events: none;
+  z-index: 20;
+  margin: -59px 0 0 -59px;
+}
+.joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 190, 110, 0.9), rgba(255, 122, 10, 0.55));
+  border: 1px solid rgba(255, 220, 170, 0.5);
+  box-shadow: 0 4px 18px rgba(255, 122, 10, 0.35);
+}
+
+/* ---------- fire button ---------- */
+.fire-btn {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 200, 130, 0.65);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 160, 60, 0.85), rgba(214, 84, 4, 0.55));
+  box-shadow: 0 8px 30px rgba(255, 110, 10, 0.45), inset 0 2px 8px rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: rgba(255, 245, 230, 0.95);
+  touch-action: none;
+  user-select: none;
+}
+.fire-btn:active {
+  transform: scale(0.94);
+  filter: brightness(1.2);
+}
+
+/* ---------- weapon cards ---------- */
+.wcard {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  position: relative;
+  overflow: hidden;
+}
+.wcard:hover { transform: translateY(-3px); border-color: #3c4554; }
+.wcard.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(255, 122, 10, 0.25);
+}
+.wcard.selected::after {
+  content: "DEPLOYED";
+  position: absolute;
+  top: 8px;
+  right: -22px;
+  background: var(--accent);
+  color: #1a0f02;
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 26px;
+  transform: rotate(38deg);
+}
+
+/* stat bars on weapon cards */
+.statbar {
+  height: 5px;
+  border-radius: 3px;
+  background: #1d222b;
+  overflow: hidden;
+}
+.statbar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #ff8a1e, #ffc877);
+  border-radius: 3px;
+}
+
+/* score table */
+.srow {
+  display: grid;
+  grid-template-columns: 28px 1fr 72px 52px;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.srow:nth-child(odd) { background: rgba(255, 255, 255, 0.03); }
+.srow.hl {
+  background: rgba(255, 138, 30, 0.14);
+  border: 1px solid rgba(255, 138, 30, 0.45);
+  color: #ffc877;
+}
+
+/* reload bar */
+@keyframes reload-sweep {
+  from { background-position: -80px 0; }
+  to { background-position: 80px 0; }
+}
+.reload-fill {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+  background-size: 80px 100%;
+  animation: reload-sweep 0.6s linear infinite;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(5, 6, 8, 0.55) 100%);
+}
+
+.scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 16;
+  opacity: 0.05;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, #000 2px 3px);
+}
+
+.key-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid #3a4250;
+  border-bottom-width: 2px;
+  background: #171b22;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8e2d4;
+  font-family: "Chakra Petch", sans-serif;
+}
+
+input.initials {
+  background: #0c0f14;
+  border: 1px solid #3a4250;
+  border-radius: 8px;
+  font-family: "Chakra Petch", sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 0.35em;
+  text-align: center;
+  width: 120px;
+  padding: 8px 4px 8px 12px;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  outline: none;
+}
+input.initials:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,138,30,0.2); }
